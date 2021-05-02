@@ -9,7 +9,7 @@ Therefor, all things most provide a Python interface.
 2) Bash does not provide such interface.
 3) We must use pyEduardino to provide it.
 
-I hope Gu*do van Ross*m forgive me for tainting the sacred languaje with some javascript's like heretics.
+I hope Gu*do van Ross*m will forgive me for tainting the sacred languaje with some javascript's like heretics.
 
 My humble addition is only to simplify onliners and some database programming.
 
