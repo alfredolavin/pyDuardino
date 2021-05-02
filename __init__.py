@@ -1,13 +1,28 @@
 from collections import OrderedDict
 from typing import Iterable
-from itertools import chain
+import itertools
 import operator
 import builtins
 import ctypes
 import re
 
-global _last,_first
-_last,_first = 0, -1
+#global last,first
+#last,first = -1, 0
+
+p= print
+
+kilobytes= 1024
+newline= '\n'
+
+class dotDict(dict):
+  __getattr__ = dict.__getitem__
+  __setattr__ = dict.__setitem__
+  __delattr__ = dict.__delitem__
+
+class OrderedDotDict(OrderedDict):
+  __getattr__ = OrderedDict.__getitem__
+  __setattr__ = OrderedDict.__setitem__
+  __delattr__ = OrderedDict.__delitem__
 
 class PyObject(ctypes.Structure):
   pass
@@ -45,9 +60,10 @@ class forEach(list):
     if not self.fname:
       raise TypeError()
     func = getattr(operator, self.fname, None) or\
-           getattr(builtins, self.fname, None)
+           getattr(builtins, self.fname, None) or\
+           getattr(itertools, self.fname, None)
     if func:
-      return forEach(( func(*((item,) + args), **kwargs) for item in self ))
+      return forEach(list( func(*((item,) + args), **kwargs) for item in self ))
     else:
       return forEach(getattr(item, self.fname)(*args, **kwargs) for item in self)
 
@@ -69,17 +85,7 @@ class _re(str):
     else:
       return _re(getattr(self, self.fname)(*args, **kwargs))
 
-class dotDict(dict):
-  __getattr__ = dict.__getitem__
-  __setattr__ = dict.__setitem__
-  __delattr__ = dict.__delitem__
-
-class OrderedDotDict(OrderedDict):
-  __getattr__ = OrderedDict.__getitem__
-  __setattr__ = OrderedDict.__setitem__
-  __delattr__ = OrderedDict.__delitem__
-
-def Nones(self, n= 10):
+def nones(self, n= 10):
   return forEach([None,]*(n or self.len))
 
 def column(self, *names):
@@ -91,29 +97,17 @@ def column(self, *names):
   else:
     return forEach([[getattr(i, name) for name in names] for i in self])
 
-def row(self, *names):
-  if isinstance(names, str):
-    names = [str(names),]
-  if len(names) == 1:
-    names= names[0]
-    return forEach([getattr(i, names) for i in self])
-  else:
-    return forEach([[getattr(i, name) for name in names] for i in self])
+def position_evens(self):
+  return forEach(self[1::2])
 
-def positionEvens(self):
-  return forEach(self)[1::2]
+def position_odds(self):
+  return forEach(self[::2])
 
-def positionOdds(self):
-  return forEach(self)[::2]
-
-def evens(self):
+def value_evens(self):
   return forEach(filter(lambda x: x%2!=0,self))
 
-def odds(self):
+def value_odds(self):
   return forEach(filter(lambda x: x%2==0,self))
-
-def numbers(self):
-  return forEach((self)[1::2])
 
 def last(self):
   return (self)[-1]
@@ -145,7 +139,7 @@ def _map(self, func):
     tmp[i]= eval(func)
   return tmp
 
-def enumerateme(self, func):
+def enumerate_me(self, func):
   return forEach(enumerate(self))
 
 def where(self, what):
@@ -157,39 +151,44 @@ def where(self, what):
   else:
     raise TypeError()
 
-def eduardinze():
-  for built_in_class in (list, tuple, range,):
-    proxy_builtin( built_in_class )['positionEvens']= property(positionEvens)
-    proxy_builtin( built_in_class )['positionOdds']= property(positionOdds)
-    proxy_builtin( built_in_class )['enumerateme']= property(enumerateme)
-    proxy_builtin( built_in_class )['reversed']= property(_reversed)
-    proxy_builtin( built_in_class )['exclude']= property(exclude)
-    proxy_builtin( built_in_class )['forEach']= property(forEach)
-    proxy_builtin( built_in_class )['numbers']= property(numbers)
+def p(*args, **kwargs):
+  print(*args, **kwargs)
+
+def eduardinize():
+  for built_in_class in (list, tuple, range, set):
     proxy_builtin( built_in_class )['column']= property(column)
-    proxy_builtin( built_in_class )['middle']= property(middle)
-    proxy_builtin( built_in_class )['evens']= property(evens)
+    proxy_builtin( built_in_class )['enumerate_me']= property(enumerate_me)
+    proxy_builtin( built_in_class )['exclude']= property(exclude)
     proxy_builtin( built_in_class )['first']= property(first)
-    proxy_builtin( built_in_class )['Nones']= property(Nones)
-    proxy_builtin( built_in_class )['where']= property(where)
+    proxy_builtin( built_in_class )['forEach']= property(forEach)
     proxy_builtin( built_in_class )['last']= property(last)
-    proxy_builtin( built_in_class )['odds']= property(odds)
     proxy_builtin( built_in_class )['len']= property(_len)
     proxy_builtin( built_in_class )['map']= property(_map)
-    proxy_builtin( built_in_class )['row']= property(row)
+    proxy_builtin( built_in_class )['middle']= property(middle)
+    proxy_builtin( built_in_class )['nones']= property(nones)
+    proxy_builtin( built_in_class )['position_evens']= property(position_evens)
+    proxy_builtin( built_in_class )['position_odds']= property(position_odds)
+    proxy_builtin( built_in_class )['reversed']= property(_reversed)
+    proxy_builtin( built_in_class )['evens']= property(value_evens)
+    proxy_builtin( built_in_class )['odds']= property(value_odds)
+    proxy_builtin( built_in_class )['where']= property(where)
 
-eduardinze()
+eduardinize()
+
+
+
+test='''
+sample = list(range(0,10,3))
+test = list(range(10)) + ['a','b']
+print(test.forEach.str().upper())
+print(range(66,88).forEach.chr().lower())
+pass'''
+
 
 def main():
   # Run some test and examples
-  
-  
-  sample = list(range(0,10,3))
-
-  test = list(range(10)) + ['a','b']
-  print(test.forEach.str().upper())
-  print(range(66,88).forEach.chr().lower())
-  pass
+  print('Running: '+test)
+  exec(test)
 
 if __name__ == '__main__':
     main()
